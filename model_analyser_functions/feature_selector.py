@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from sklearn.tree import DecisionTreeClassifier
+from scipy import stats
 
 class Feature_Selector():
 
@@ -160,3 +161,39 @@ class Feature_Selector():
 
             self.plot_feature_importance(coef_df, axis.ravel()[i] , 'log reg, C:{:.4f}'.format(reg_strength))
             plt.tight_layout()
+
+    def kruskal_test(self):
+
+        '''The Kruskal-Wallis H-test tests the null hypothesis that the population median of all of the groups are equal.
+        It is a non-parametric version of ANOVA. The test works on 2 or more independent samples, which may have 
+        different sizes. Note that rejecting the null hypothesis does not indicate which of the groups differs.
+        Post hoc comparisons between groups are required to determine which groups are different.'''
+
+        categories = np.unique(self.df[self.target])
+
+        p_values = {}
+
+        for column in self.df.columns:
+            if column != self.target:
+                aux = self.df[[column, self.target]].copy()
+                
+                values_feat={}
+
+                for category in categories:
+                    values_feat[category] = aux[aux[self.target]== category][column].tolist()
+
+                p_values[column] = stats.kruskal(*values_feat.values())[1]
+
+        fig, ax = plt.subplots(1, 1, figsize=(15,10))
+
+        sns.barplot(y=list(p_values.values()), x=list(p_values.keys()), ax=ax, orient = 'v')
+        plt.title('p-values')
+
+        for p in ax.patches:
+            ax.annotate("%.2f" % p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha='center', va='center', rotation=90, xytext=(0, 20), textcoords='offset points')
+
+
+        return p_values
+
+
